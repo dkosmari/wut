@@ -47,6 +47,15 @@ typedef enum WPADError
    WPAD_ERROR_BAD_CONF      = -9,
 } WPADError;
 
+typedef enum WBCError
+{
+   WBC_ERROR_NONE            =  0,
+   WBC_ERROR_NO_CONTROLLER   = -1,
+   WBC_ERROR_NOT_READY       = -2,
+   WBC_ERROR_BAD_TEMPERATURE = -3,
+   WBC_ERROR_INVALID         = -4,
+} WBCError;
+
 //! Wii Remote channel.
 typedef enum WPADChan
 {
@@ -283,6 +292,7 @@ struct WPADIRDot
    WPADVec2D pos;               //!< Position (in a 1024x768 grid).
    uint16_t  size;              //!< Apparent size (0-15).
    uint8_t   id;                //!< Identifier.
+   WUT_PADDING_BYTES(1);
 };
 WUT_CHECK_OFFSET(WPADIRDot, 0x0, pos);
 WUT_CHECK_OFFSET(WPADIRDot, 0x4, size);
@@ -1166,6 +1176,14 @@ WPADMplsMode
 WPADiGetMplsStatus(void);
 
 /**
+ * Returns the battery level.
+ *
+ * \return A charge level, from 0 to 4.
+ */
+uint8_t
+WPADGetBatteryLevel(WPADChan channel);
+
+/**
  * Sends a command to the balance board.
  */
 WPADError
@@ -1173,8 +1191,9 @@ WPADControlBLC(WPADChan channel,
                WPADBalanceBoardCmd command,
                WPADCallback callback);
 
-// TODO:
-//WBCGetABSWeight
+// TODO: Check result, it seems to return raw pressure data, not weight.
+uint32_t
+WBCGetABSWeight(void);
 
 /**
  * Converts raw battery value to a level.
@@ -1182,7 +1201,7 @@ WPADControlBLC(WPADChan channel,
  * \param battery The `battery` field from `WPADStatusBalanceBoard`.
  * \return A level from 0 to 4.
  */
-int32_t
+uint32_t
 WBCGetBatteryLevel(uint8_t battery);
 
 /**
@@ -1194,11 +1213,35 @@ WBCGetBatteryLevel(uint8_t battery);
 BOOL
 WBCGetCalibrationStatus(void);
 
-// TODO:
-//WBCGetGCWeight
-//WBCGetGravCoff
-//WBCGetProductArea
-//WBCGetTCWeight
+/**
+ * Returns gravity-corrected weight.
+ *
+ * Used internally by `WBCGetTGCWeight()`.
+ */
+double
+WBCGetGCWeight(double weight);
+
+/**
+ * Returns the gravity coefficient.
+ */
+double
+WBCGetGravCoff(void);
+
+/**
+ * Always returns 0.
+ */
+uint32_t
+WBCGetProductArea(void);
+
+/**
+ * Returns temperature-corrected weight.
+ *
+ * Used internally by `WBCGetTGCWeight()`.
+ */
+WBCError
+WBCGetTCWeight(double weight,
+               double *correctedWeight,
+               const WPADStatusBalanceBoard *status);
 
 /**
  * Applies temperature and gravity correction to weight value.
@@ -1208,12 +1251,17 @@ WBCGetCalibrationStatus(void);
  * \param status The status data used in `WPADRead()` and `WBCRead()`.
  * \return Zero on success, or an error code.
  */
-int32_t
+WBCError
 WBCGetTGCWeight(double inputWeight,
                 double *correctedWeight,
-                WPADStatusBalanceBoard *status);
+                const WPADStatusBalanceBoard *status);
 
-//WBCGetZEROPoint
+/**
+ * Return the current zeros for each sensor.
+ */
+WBCError
+WBCGetZEROPoint(double zeros[],
+                uint32_t count);
 
 /**
  * Converts the raw pressure data into weight values.
@@ -1221,7 +1269,10 @@ WBCGetTGCWeight(double inputWeight,
  * \param status The status argument filled in by `WPADRead()`.
  * \param weight Pointer to an array of 4 elements to store the weights.
  * \param count How many elements in `weight` (should be 4).
- * \return Zero on success, or negative error code.
+ * \return
+ *   - `1`: at least 7 Kg were detected.
+ *   - `0`: measuring less than 7 Kg.
+ *   - Negative: one of the `WBCError` values.
  * \sa `WBCSetupCalibration()`
  */
 int32_t
@@ -1238,7 +1289,7 @@ WBCRead(WPADStatusBalanceBoard *status,
  * - `WBCSetupCalibration()`
  * - `WPADControlBLC()`
  */
-int32_t
+WBCError
 WBCSetZEROPoint(double zeros[],
                 uint32_t count);
 
