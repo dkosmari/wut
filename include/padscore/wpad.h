@@ -573,6 +573,14 @@ void
 WPADShutdown(void);
 
 /**
+ * Get the status of the WPAD library.
+ *
+ * \return `TRUE` if the library is initialized.
+ */
+BOOL
+WPADGetStatus(void);
+
+/**
  * Immediately disconnects the associated controller
  */
 void
@@ -867,7 +875,7 @@ WPADIsEnabledURC(void);
  * Enables/disables Wii Balance Board support
  */
 void
-WPADEnableWBC(BOOL enable);
+WPADEnableWBC(void);
 
 /**
  * Returns whether Wii Balance Boards are supported
