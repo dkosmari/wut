@@ -374,6 +374,18 @@ KPADEnableDPD(KPADChan chan);
 void
 KPADDisableDPD(KPADChan chan);
 
+/**
+ * Resets the Balance Board's zero.
+ */
+void
+KPADResetWbcZeroPoint(void);
+
+/**
+ * Recalculate the Balance Board's TGC coefficients and zero.
+ */
+void
+KPADResetWbcTgcWeight(void);
+
 #ifdef __cplusplus
 }
 #endif
