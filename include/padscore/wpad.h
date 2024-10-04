@@ -1276,7 +1276,7 @@ WBCGetZEROPoint(double zeros[],
  * Converts the raw pressure data into weight values.
  *
  * \param status The status argument filled in by `WPADRead()`.
- * \param weight Pointer to an array of 4 elements to store the weights.
+ * \param weights Pointer to an array of 4 elements to store the weights in Kg.
  * \param count How many elements in `weight` (should be 4).
  * \return
  *   - `1`: at least 7 Kg were detected.
@@ -1286,7 +1286,7 @@ WBCGetZEROPoint(double zeros[],
  */
 int32_t
 WBCRead(WPADStatusBalanceBoard *status,
-        double weight[],
+        double weights[],
         uint32_t count);
 
 /**
@@ -1299,7 +1299,7 @@ WBCRead(WPADStatusBalanceBoard *status,
  * - `WPADControlBLC()`
  */
 WBCError
-WBCSetZEROPoint(double zeros[],
+WBCSetZEROPoint(const double zeros[],
                 uint32_t count);
 
 /**

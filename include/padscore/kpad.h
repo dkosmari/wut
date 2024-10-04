@@ -92,15 +92,35 @@ struct KPADStatus
    //! Indicates the variation in acceleration.
    float accVariation;
 
-   //! Indicates the position where the Wii Remote is pointing.
+   //! Indicates the position where the Wii Remote is pointing; positive for right and down.
    KPADVec2D pos;
 
-   WUT_UNKNOWN_BYTES(3 * 4);
+   //! Difference from previous `pos`.
+   KPADVec2D posDiff;
 
-   //! Angle.
+   //! Magnitude of `posDiff`.
+   float posDiffMagnitude;
+
+   //! Angle: horizon vector (+x is rigt, +y is down.)
    KPADVec2D angle;
 
-   WUT_UNKNOWN_BYTES(8 * 4);
+   //! Difference from previous `angle`.
+   KPADVec2D angleDiff;
+
+   //! Magnitude of `angleDiff`.
+   float angleDiffMagnitude;
+
+   //! Distance to the sensor bar, in meters.
+   float dist;
+
+   //! Difference from previous `dist`.
+   float distDiff;
+
+   //! Absolute value of `distDiff`.
+   float distDiffMagnitude;
+
+   //! The "down" vector from accelerometer: when `down.y` is negative, wiimote is facing down.
+   KPADVec2D down;
 
    //! Value from KPADExtensionType.
    uint8_t extensionType;
@@ -108,7 +128,7 @@ struct KPADStatus
    //! Value from KPADError.
    int8_t error;
 
-   //! Validity of the result.
+   //! Validity of the `pos` field.
    int8_t posValid;
 
    //! Value from KPADDataFormat.
@@ -180,18 +200,19 @@ struct KPADStatus
          //! Averaged corrected (total) weight.
          double  avgTGCWeight;
          //! Uncorrected weights.
-         double  weight[WPAD_MAX_PRESSURE_SENSORS];
+         double  weights[WPAD_MAX_PRESSURE_SENSORS];
          //! Averaged uncorrected weights.
-         double  avgWeight[WPAD_MAX_PRESSURE_SENSORS];
+         double  avgWeights[WPAD_MAX_PRESSURE_SENSORS];
          //! Error from reading weights.
-         int32_t readError;
-         //! Error from calculating average corrected weight.
-         int32_t correctionError;
+         int32_t error;
+         //! Error related to TGC calculation.
+         int32_t errorTGC;
       } balance;
 
       WUT_UNKNOWN_BYTES(20 * 4);
    };
 
+   // TODO: these seem to be MotionPlus related.
    WUT_UNKNOWN_BYTES(16 * 4);
 };
 WUT_CHECK_OFFSET(KPADStatus, 0x00, hold);
@@ -201,7 +222,15 @@ WUT_CHECK_OFFSET(KPADStatus, 0x0C, acc);
 WUT_CHECK_OFFSET(KPADStatus, 0x18, accMagnitude);
 WUT_CHECK_OFFSET(KPADStatus, 0x1C, accVariation);
 WUT_CHECK_OFFSET(KPADStatus, 0x20, pos);
+WUT_CHECK_OFFSET(KPADStatus, 0x28, posDiff);
+WUT_CHECK_OFFSET(KPADStatus, 0x30, posDiffMagnitude);
 WUT_CHECK_OFFSET(KPADStatus, 0x34, angle);
+WUT_CHECK_OFFSET(KPADStatus, 0x3C, angleDiff);
+WUT_CHECK_OFFSET(KPADStatus, 0x44, angleDiffMagnitude);
+WUT_CHECK_OFFSET(KPADStatus, 0x48, dist);
+WUT_CHECK_OFFSET(KPADStatus, 0x4C, distDiff);
+WUT_CHECK_OFFSET(KPADStatus, 0x50, distDiffMagnitude);
+WUT_CHECK_OFFSET(KPADStatus, 0x54, down);
 WUT_CHECK_OFFSET(KPADStatus, 0x5C, extensionType);
 WUT_CHECK_OFFSET(KPADStatus, 0x5D, error);
 WUT_CHECK_OFFSET(KPADStatus, 0x5E, posValid);
@@ -230,6 +259,12 @@ WUT_CHECK_OFFSET(KPADStatus, 0x6C, pro.leftStick);
 WUT_CHECK_OFFSET(KPADStatus, 0x74, pro.rightStick);
 WUT_CHECK_OFFSET(KPADStatus, 0x7C, pro.charging);
 WUT_CHECK_OFFSET(KPADStatus, 0x80, pro.wired);
+// For WPAD_EXT_BALANCE_BOARD
+WUT_CHECK_OFFSET(KPADStatus, 0x60, balance.avgTGCWeight);
+WUT_CHECK_OFFSET(KPADStatus, 0x68, balance.weights);
+WUT_CHECK_OFFSET(KPADStatus, 0x88, balance.avgWeights);
+WUT_CHECK_OFFSET(KPADStatus, 0xA8, balance.error);
+WUT_CHECK_OFFSET(KPADStatus, 0xAC, balance.errorTGC);
 WUT_CHECK_SIZE(KPADStatus, 0xF0);
 
 typedef WPADConnectCallback KPADConnectCallback;
@@ -238,13 +273,13 @@ typedef WPADConnectCallback KPADConnectCallback;
  * Initialises the KPAD library for use.
  */
 void
-KPADInit();
+KPADInit(void);
 
 /**
  * Cleans up and frees the KPAD library.
  */
 void
-KPADShutdown();
+KPADShutdown(void);
 
 /**
  * Read data from the desired controller.
