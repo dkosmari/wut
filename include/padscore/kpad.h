@@ -117,7 +117,7 @@ struct KPADStatus
    //! Extension data, check with extensionType to see what is valid to read.
    union
    {
-      //! Structure to use when extension type is set to \link WPAD_EXT_NUNCHUK \endlink.
+      //! Structure to use when `extensionType` is set to \link WPAD_EXT_NUNCHUK \endlink.
       struct
       {
          //! Position of the analog stick.
@@ -136,7 +136,7 @@ struct KPADStatus
          uint32_t release;
       } nunchuk;
 
-      //! Structure to use when extension type is set to \link WPAD_EXT_CLASSIC \endlink.
+      //! Structure to use when `extensionType` is set to \link WPAD_EXT_CLASSIC \endlink.
       struct
       {
          //! Indicates what buttons are held down.
@@ -155,7 +155,7 @@ struct KPADStatus
          float rightTrigger;
       } classic;
 
-      //! Structure to use when extension type is set to \link WPAD_EXT_PRO_CONTROLLER \endlink.
+      //! Structure to use when `extensionType` is set to \link WPAD_EXT_PRO_CONTROLLER \endlink.
       struct
       {
          //! Indicates what buttons are held down.
@@ -173,6 +173,21 @@ struct KPADStatus
          //! Is wired flag.
          int32_t wired;
       } pro;
+
+      //! Structure to use when `extensionType` is set to `WPAD_EXT_BALANCE_BOARD`.
+      struct
+      {
+         //! Averaged corrected (total) weight.
+         double  avgTGCWeight;
+         //! Uncorrected weights.
+         double  weight[WPAD_MAX_PRESSURE_SENSORS];
+         //! Averaged uncorrected weights.
+         double  avgWeight[WPAD_MAX_PRESSURE_SENSORS];
+         //! Error from reading weights.
+         int32_t readError;
+         //! Error from calculating average corrected weight.
+         int32_t correctionError;
+      } balance;
 
       WUT_UNKNOWN_BYTES(20 * 4);
    };
@@ -323,7 +338,7 @@ KPADSetConnectCallback(KPADChan chan,
 
 /**
  * Sets MotionPlus for the controller in specified mode
- * 
+ *
  * \param mode
  * The MotionPlus mode which should be used, the mode may be ignored and a different mode used,
  * usually because the required extension is not connected. Make sure to check result with

@@ -96,6 +96,7 @@ typedef enum WPADExtensionType
    WPAD_EXT_CORE           = 0x00, //!< Wii Remote with no extension.
    WPAD_EXT_NUNCHUK        = 0x01, //!< Nunchuk.
    WPAD_EXT_CLASSIC        = 0x02, //!< Classic Controller.
+   WPAD_EXT_BALANCE_BOARD  = 0x03, //!< Balance Board.
    WPAD_EXT_MPLUS          = 0x05, //!< Motion Plus.
    WPAD_EXT_MPLUS_NUNCHUK  = 0x06, //!< Motion Plus with Nunchuk.
    WPAD_EXT_MPLUS_CLASSIC  = 0x07, //!< Motion Plus with Classic Controller.
