@@ -205,8 +205,8 @@ struct KPADStatus
          double  avgWeights[WPAD_MAX_PRESSURE_SENSORS];
          //! Error from reading weights.
          int32_t error;
-         //! Error related to TGC calculation.
-         int32_t errorTGC;
+         //! Status of calibration: negative is error, otherwise is [0, 3].
+         int32_t calibration;
       } balance;
 
       WUT_UNKNOWN_BYTES(20 * 4);
@@ -264,7 +264,7 @@ WUT_CHECK_OFFSET(KPADStatus, 0x60, balance.avgTGCWeight);
 WUT_CHECK_OFFSET(KPADStatus, 0x68, balance.weights);
 WUT_CHECK_OFFSET(KPADStatus, 0x88, balance.avgWeights);
 WUT_CHECK_OFFSET(KPADStatus, 0xA8, balance.error);
-WUT_CHECK_OFFSET(KPADStatus, 0xAC, balance.errorTGC);
+WUT_CHECK_OFFSET(KPADStatus, 0xAC, balance.calibration);
 WUT_CHECK_SIZE(KPADStatus, 0xF0);
 
 typedef WPADConnectCallback KPADConnectCallback;
