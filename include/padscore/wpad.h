@@ -22,6 +22,7 @@ typedef struct WPADVec2D WPADVec2D;
 typedef struct WPADVec3D WPADVec3D;
 typedef struct WPADInfo WPADInfo;
 typedef struct WPADAddress WPADAddress;
+typedef struct WPADiMplsCalibration WPADiMplsCalibration;
 typedef struct WPADiQueueElement WPADiQueueElement;
 typedef struct WPADiQueue WPADiQueue;
 typedef struct WPADIRDot WPADIRDot;
@@ -69,6 +70,14 @@ typedef enum WPADChan
    //! Channel 6.
    WPAD_CHAN_6 = 6,
 } WPADChan;
+
+typedef enum WPADClampType
+{
+   WPAD_CLAMP_TYPE_OCTAGON_DEADZONE = 0,
+   WPAD_CLAMP_TYPE_OCTAGON          = 1,
+   WPAD_CLAMP_TYPE_CIRCLE_DEADZONE  = 2,
+   WPAD_CLAMP_TYPE_CIRCLE           = 3,
+} WPADClampType;
 
 //! Data format.
 typedef enum WPADDataFormat
@@ -383,6 +392,18 @@ typedef enum WPADPeripheralSpace
    WPAD_PERIPHERAL_SPACE_DPD        = 0xB0,
 } WPADPeripheralSpace;
 
+typedef enum WPADSensorBarPos
+{
+   WPAD_SENSOR_BAR_POS_BELOW = 0,
+   WPAD_SENSOR_BAR_POS_ABOVE = 1,
+} WPADSensorBarPos;
+
+typedef enum WPADSyncDeviceEvent
+{
+   WPAD_SYNC_DEVICE_EVENT_STARTED  = 0,
+   WPAD_SYNC_DEVICE_EVENT_FINISHED = 1,
+} WPADSyncDeviceEvent;
+
 //! Balance Board commands.
 typedef enum WPADBalanceBoardCmd
 {
@@ -424,9 +445,9 @@ WUT_CHECK_SIZE(WPADVec3D, 0x06);
 //! A single IR dot tracked by the camera.
 struct WPADIRDot
 {
-   //! Position (in a 1024x768 grid).
+   //! Position (in a `1024x768` grid).
    WPADVec2D pos;
-   //! Pixel area (in a 128x96 grid).
+   //! Pixel area (in a `128x96` grid).
    uint16_t pixels;
    //! Identifier.
    uint8_t id;
@@ -440,13 +461,13 @@ WUT_CHECK_SIZE(WPADIRDot, 0x8);
 //! A single IR dot tracked by the camera, extra info.
 struct WPADIRDotEx
 {
-   //! Top-right coordinate (in a 1024x768 grid).
+   //! Top-right coordinate (in a `1024x768` grid).
    WPADVec2D topRight;
-   //! Bottom-left coordinate (in a 1024x768 grid).
+   //! Bottom-left coordinate (in a `1024x768` grid).
    WPADVec2D bottomLeft;
-   //! Pixel area (in a 128x96 grid).
+   //! Pixel area (in a `128x96` grid).
    uint16_t pixels;
-   //! Calculated size (from 0 to 15).
+   //! Calculated size (from `0` to `15`).
    uint8_t size;
    WUT_PADDING_BYTES(1);
 };
@@ -517,9 +538,9 @@ struct WPADStatusNunchuk
    WPADVec3D acc;
    struct
    {
-      //! x, in the range [-128, 127].
+      //! x, in the range `[-128, 127]`.
       int8_t x;
-      //! y, in the range [-128, 127].
+      //! y, in the range `[-128, 127]`.
       int8_t y;
    } stick;
 };
@@ -545,9 +566,9 @@ struct WPADStatusClassic
    WPADStatus core;
    //! Bitset from `WPADClassicButton`.
    uint16_t buttons;
-   //! Left stick: [-512, 511] x [-512, 511]
+   //! Left stick: `[-512, 511] x [-512, 511]`
    WPADVec2D leftStick;
-   //! Right stick: [-512, 511] x [-512, 511]
+   //! Right stick: `[-512, 511] x [-512, 511]`
    WPADVec2D rightStick;
    uint8_t leftTrigger;
    uint8_t rightTrigger;
@@ -572,9 +593,9 @@ struct WPADStatusProController
    WUT_PADDING_BYTES(2);
    //! Bitset from `WPADProButton`.
    uint32_t buttons;
-   //! Left stick: [-2048, 2047] x [-2048 x 2047]
+   //! Left stick: `[-2048, 2047] x [-2048 x 2047]`
    WPADVec2D leftStick;
-   //! Right stick: [-2048, 2047] x [-2048 x 2047]
+   //! Right stick: `[-2048, 2047] x [-2048 x 2047]`
    WPADVec2D rightStick;
    BOOL charging;
    BOOL wired;
@@ -608,9 +629,9 @@ struct WPADStatusMotionPlus
          WPADVec3D acc;
          struct
          {
-            //! x: [-128, 127]
+            //! x: `[-128, 127]`
             int8_t x;
-            //! y: [-128, 127]
+            //! y: `[-128, 127]`
             int8_t y;
          } stick;
       } nunchuk;
@@ -618,9 +639,9 @@ struct WPADStatusMotionPlus
       {
          //! Bitset from `WPADClassicButton`.
          uint16_t buttons;
-         //! Left stick: [-512, 511] x [-512, 511]
+         //! Left stick: `[-512, 511] x [-512, 511]`
          WPADVec2D leftStick;
-         //! Right stick: [-512, 511] x [-512, 511]
+         //! Right stick: `[-512, 511] x [-512, 511]`
          WPADVec2D rightStick;
          uint8_t leftTrigger;
          uint8_t rightTrigger;
@@ -741,12 +762,34 @@ struct WPADAddress
 WUT_CHECK_OFFSET(WPADAddress, 0x00, btDeviceAddress);
 WUT_CHECK_SIZE(WPADAddress, 0x6);
 
-//! Continuation parameters for \link WENCGetEncodeData
+//! Continuation parameters for `WENCGetEncodeData()`.
 struct WENCParams
 {
    WUT_UNKNOWN_BYTES(32);
 };
 WUT_CHECK_SIZE(WENCParams, 32);
+
+struct WPADiMplsCalibration
+{
+   float pitchZero;
+   float pitchScale;
+
+   float yawZero;
+   float yawScale;
+
+   float rollZero;
+   float rollScale;
+
+   int32_t degrees;
+};
+WUT_CHECK_OFFSET(WPADiMplsCalibration, 0x00, pitchZero);
+WUT_CHECK_OFFSET(WPADiMplsCalibration, 0x04, pitchScale);
+WUT_CHECK_OFFSET(WPADiMplsCalibration, 0x08, yawZero);
+WUT_CHECK_OFFSET(WPADiMplsCalibration, 0x0C, yawScale);
+WUT_CHECK_OFFSET(WPADiMplsCalibration, 0x10, rollZero);
+WUT_CHECK_OFFSET(WPADiMplsCalibration, 0x14, rollScale);
+WUT_CHECK_OFFSET(WPADiMplsCalibration, 0x18, degrees);
+WUT_CHECK_SIZE(WPADiMplsCalibration, 0x1C);
 
 typedef void (*WPADCallback)(WPADChan channel, WPADError status);
 typedef WPADCallback WPADControlLedCallback;
@@ -767,9 +810,12 @@ typedef void (*WPADSamplingCallback)(WPADChan channel);
  */
 typedef void (*WPADExtensionCallback)(WPADChan channel, WPADExtensionType ext);
 
+typedef void (*WPADClearDeviceCallback)(uint32_t status);
+
+typedef void (*WPADSyncDeviceCallback)(WPADSyncDeviceEvent event, uint32_t unk);
 
 /**
- * Initialises the WPAD library for use.
+ * Initializes the WPAD library for use.
  */
 void
 WPADInit(void);
@@ -1125,19 +1171,31 @@ WPADIsEnableWBC(void);
 void
 WPADEnableWiiRemote(BOOL enable);
 
+/**
+ * Sets how long the wiimote is kept connected while generating no new inputs.
+ *
+ * \param minutes Time timeout value, `0` to disable it. Default is `5` minutes.
+ *
+ * \sa
+ * - `WPADGetAutoSleepTimeCount()`
+ * - `WPADResetAutoSleepTimeCount()`
+ */
 void
-WPADSetAutoSleepTime(uint8_t time);
+WPADSetAutoSleepTime(uint8_t minutes);
 
 /**
- * Starts searching for a WPAD controller in pairing mode and syncs with it
- * \return TRUE if sync started
+ * Starts searching for a WPAD controller in pairing mode and syncs with it.
+ *
+ * \return TRUE if sync started.
  */
 BOOL
 WPADStartSyncDevice(void);
 
 /**
  * Starts attempts to sync with a WPAD with the specified properties.
- * If unable to find a device, does the same as \link WPADStartSyncDevice \endlink
+ *
+ * If unable to find a device, does the same as `WPADStartSyncDevice()`.
+ *
  * \param deviceAddress Bluetooth address of the device to connect to.
  * \param deviceName Bluetooth name of the device to connect to (up to 24 characters)
  * \return TRUE if sync started
@@ -1161,7 +1219,7 @@ WPADStartSyncDeviceEx(WPADAddress *deviceAddress,
  *   - `WPAD_ERROR_NO_CONTROLLER` when controller disconnects.
  * \return the previously used callback
  *
- * \warning May overwrite callbacks used internally by KPAD. If using KPAD, \link KPADSetConnectCallback \endlink is preferable.
+ * \warning May overwrite callbacks used internally by KPAD. If using KPAD, `KPADSetConnectCallback()` is preferable.
  */
 WPADConnectCallback
 WPADSetConnectCallback(WPADChan channel,
@@ -1203,7 +1261,7 @@ WPADGetLatestIndexInBuf(WPADChan channel);
  * Registers a callback to be invoked whenever new `WPADStatus*` data is stored in the
  * ring buffer.
  *
- * \warning May overwrite callbacks used internally by KPAD. If using KPAD, \link KPADSetSamplingCallback \endlink is preferable.
+ * \warning May overwrite callbacks used internally by KPAD. If using KPAD, `KPADSetSamplingCallback()` is preferable.
  *
  * \sa
  * - `WPADSetAutoSamplingBuf()`
@@ -1217,21 +1275,22 @@ void
 WPADiShutdown(void);
 
 /**
- * Clears all elements from queue
+ * Clears all elements from queue.
  */
 void
 WPADiClearQueue(WPADiQueue *queue);
 
 /**
- * Checks if there is enough space in the queue
+ * Checks if there is enough space in the queue.
  */
 bool
 WPADiIsAvailableCmdQueue(WPADiQueue *queue,
                          uint32_t count);
 
 /**
- * Parses incoming HID report data for a controller
- * \return -1 if first byte is outside the valid input report range (0x20 to 0x3f)
+ * Parses incoming HID report data for a controller.
+ *
+ * \return `-1` if first byte is outside the valid input report range (`0x20` to `0x3f`).
  */
 int32_t
 WPADiHIDParser(WPADChan channel,
@@ -1239,18 +1298,21 @@ WPADiHIDParser(WPADChan channel,
 
 
 /**
- * Queues HID Report for Rumble Update
+ * Queues HID Report for Rumble Update.
  *
- * Rumble must be set before this
- * \return TRUE if successfully added to queue
+ * Rumble must be set before this.
+ *
+ * \return `TRUE` if successfully added to queue.
  */
 BOOL
 WPADiSendSetVibrator(WPADiQueue *cmdQueue);
 
 /**
- * Queues HID Report for setting LEDs
- * used internally by \link WPADControlLed \endlink
- * \return TRUE if successfully added to queue
+ * Queues HID Report for setting LEDs.
+ *
+ * Used internally by `WPADControlLed()`.
+ *
+ * \return `TRUE` if successfully added to queue.
  */
 BOOL
 WPADiSendSetPort(WPADiQueue *cmdQueue,
@@ -1258,9 +1320,11 @@ WPADiSendSetPort(WPADiQueue *cmdQueue,
                  WPADCallback callback);
 
 /**
- * Queues HID Report for setting data reporting mode
- * used internally by \link WPADSetPowerSaveMode \endlink
- * \return TRUE if successfully added to queue
+ * Queues HID Report for setting data reporting mode.
+ *
+ * Used internally by `WPADSetPowerSaveMode()`.
+ *
+ * \return `TRUE` if successfully added to queue.
  */
 BOOL
 WPADiSendSetReportType(WPADiQueue *cmdQueue,
@@ -1269,9 +1333,11 @@ WPADiSendSetReportType(WPADiQueue *cmdQueue,
                        WPADCallback callback);
 
 /**
- * Queues HID report for a controller status request
- * used internally by \link WPADGetInfoAsync \endlink and several other functions
- * \return TRUE if successfully added to queue
+ * Queues HID report for a controller status request.
+ *
+ * Used internally by `WPADGetInfoAsync()` and several other functions.
+ *
+ * \return `TRUE` if successfully added to queue.
  */
 BOOL
 WPADiSendGetContStat(WPADiQueue *cmdQueue,
@@ -1279,9 +1345,11 @@ WPADiSendGetContStat(WPADiQueue *cmdQueue,
                      WPADCallback callback);
 
 /**
- * Queues HID Report for enabling the IR Camera clock
- * used internally by \link WPADControlDpd \endlink
- * \return TRUE if successfully added to queue
+ * Queues HID Report for enabling the IR Camera clock.
+ *
+ * Used internally by `WPADControlDpd`.
+ *
+ * \return `TRUE` if successfully added to queue.
  */
 BOOL
 WPADiSendEnableDPD(WPADiQueue *cmdQueue,
@@ -1289,9 +1357,11 @@ WPADiSendEnableDPD(WPADiQueue *cmdQueue,
                    WPADCallback callback);
 
 /**
- * Queues HID Report for enabling IR Camera
- * used internally by \link WPADControlDpd \endlink
- * \return TRUE if successfully added to queue
+ * Queues HID Report for enabling IR Camera.
+ *
+ * Used internally by `WPADControlDpd()`.
+ *
+ * \return `TRUE` if successfully added to queue.
  */
 BOOL
 WPADiSendEnableDPDCSB(WPADiQueue *cmdQueue,
@@ -1300,8 +1370,10 @@ WPADiSendEnableDPDCSB(WPADiQueue *cmdQueue,
 
 /**
  * Queues HID Report for enabling speakers.
- * Used internally by \link WPADControlSpeaker \link
- * \return TRUE if successfully added to queue
+ *
+ * Used internally by `WPADControlSpeaker()`.
+ *
+ * \return `TRUE` if successfully added to queue.
  */
 BOOL
 WPADiSendEnableSpeaker(WPADiQueue *cmdQueue,
@@ -1309,9 +1381,11 @@ WPADiSendEnableSpeaker(WPADiQueue *cmdQueue,
                        WPADCallback callback);
 
 /**
- * Queues HID Report for muting speakers
- * used internally by \link WPADControlSpeaker \link
- * \return TRUE if successfully added to queue
+ * Queues HID Report for muting speakers.
+ *
+ * Used internally by `WPADControlSpeaker()`.
+ *
+ * \return `TRUE` if successfully added to queue.
  */
 BOOL
 WPADiSendMuteSpeaker(WPADiQueue *cmdQueue,
@@ -1319,9 +1393,11 @@ WPADiSendMuteSpeaker(WPADiQueue *cmdQueue,
                      WPADCallback callback);
 
 /**
- * Queues HID Report for sending speaker stream data
- * used internally by \link WPADSendStreamData \endlink
- * \return TRUE if successfully added to queue
+ * Queues HID Report for sending speaker stream data.
+ *
+ * Used internally by `WPADSendStreamData()`.
+ *
+ * \return `TRUE` if successfully added to queue.
  */
 BOOL
 WPADiSendStreamData(WPADiQueue *cmdQueue,
@@ -1329,8 +1405,9 @@ WPADiSendStreamData(WPADiQueue *cmdQueue,
                     uint32_t size);
 
 /**
- * Queues HID Report for a single-byte memory write
- * \return TRUE if successfully added to queue
+ * Queues HID Report for a single-byte memory write.
+ *
+ * \return `TRUE` if successfully added to queue.
  */
 BOOL
 WPADiSendWriteDataCmd(WPADiQueue *cmdQueue,
@@ -1339,9 +1416,11 @@ WPADiSendWriteDataCmd(WPADiQueue *cmdQueue,
                       WPADCallback callback);
 
 /**
- * Queues HID Report for a multi-byte memory write
- * used internally by \link WPADWriteMemoryAsync \endlink
- * \return TRUE if successfully added to queue
+ * Queues HID Report for a multi-byte memory write.
+ *
+ * Used internally by `WPADWriteMemoryAsync()`.
+ *
+ * \return `TRUE` if successfully added to queue.
  */
 BOOL
 WPADiSendWriteData(WPADiQueue *cmdQueue,
@@ -1351,9 +1430,11 @@ WPADiSendWriteData(WPADiQueue *cmdQueue,
                    WPADCallback callback);
 
 /**
- * Queues HID Report for a memory read
- * used internally by \link WPADReadMemoryAsync \endlink
- * \return TRUE if successfully added to queue
+ * Queues HID Report for a memory read.
+ *
+ * Used internally by `WPADReadMemoryAsync()`.
+ *
+ * \return `TRUE` if successfully added to queue.
  */
 BOOL
 WPADiSendReadData(WPADiQueue *cmdQueue,
@@ -1363,66 +1444,73 @@ WPADiSendReadData(WPADiQueue *cmdQueue,
                   WPADCallback callback);
 
 /**
- * Game code (identifier), which may be saved to the EEPROM of connected controllers
- * \return pointer to the game code
+ * Gets game code (identifier), which may be saved to the EEPROM of connected controllers.
+ *
+ * \return pointer to the game code.
  */
 uint32_t *
 WPADiGetGameCode(void);
 
 /**
- * Game type, which may be saved to the EEPROM of connected controllers
- * \return 0x80
+ * Gets game type, which may be saved to the EEPROM of connected controllers.
+ *
+ * \return `0x80`
  */
 uint8_t
 WPADiGetGameType(void);
 
 /**
- * Sets game title for all connected controllers
- * \param title up to 17 UTF-16 characters including null terminator
- * title will be copied onto the controller EEPROM
+ * Sets game title for all connected controllers.
+ *
+ * \param title Up to 17 UTF-16 characters including null terminator, be copied onto the
+ *              controller EEPROM.
+ *
  * \sa
- * - WPADGetGameTitleUtf16
- * - WPADiWriteGameData
+ * - `WPADGetGameTitleUtf16()`
+ * - `WPADiWriteGameData()`
  */
 void
 WPADSetGameTitleUtf16(const uint16_t *title);
 
 /**
- * Gets game title stored on specified controller
+ * Gets game title stored on specified controller.
+ *
  * \param outTitle pointer to where the title will be output
  * \return `WPAD_ERROR_INVALID`, if game data previously failed to write
  * \sa
- * - WPADSetGameTitleUtf16
- * - WPADiReadGameData
+ * - `WPADSetGameTitleUtf16()`
+ * - `WPADiReadGameData()`
  */
 WPADError
 WPADGetGameTitleUtf16(WPADChan channel,
                       uint16_t **outTitle);
 
 /**
- * Get the time that game data was written
- * \return `WPAD_ERROR_INVALID`, if game data previously failed to write
+ * Gets the time that game data was written.
+ *
+ * \return `WPAD_ERROR_INVALID`, if game data previously failed to write.
  */
 WPADError
 WPADGetGameDataTimeStamp(WPADChan channel,
                          OSTime *outTimestamp);
 
 /**
- * Write custom game data to the controller's EEPROM
+ * Writes custom game data to the controller's EEPROM.
  *
  * \param offset start address within custom data region
  * \param callback Invoked when write completes; status will be:
  *   - `WPAD_ERROR_NONE` on success.
  *   - `WPAD_ERROR_TRANSFER` on failure.
  *
- * also stores the current game type and game code and commits the game title set by \link WPADSetGameTitleUtf16 \endlink
+ * Also stores the current game type and game code and commits the game title set by `WPADSetGameTitleUtf16()`.
+ *
  * \return `WPAD_ERROR_NONE`, if the write request was sent
  * \return `WPAD_ERROR_NOT_READY`, if the controller is busy, or game data is in the process of being read or written
  * \sa
- * - WPADiReadGameData
- * - WPADiGetGameType
- * - WPADiGetGameCode
- * - WPADGetGameDataTimestamp
+ * - `WPADiReadGameData()`
+ * - `WPADiGetGameType()`
+ * - `WPADiGetGameCode()`
+ * - `WPADGetGameDataTimeStamp()`
  */
 WPADError
 WPADiWriteGameData(WPADChan channel,
@@ -1432,15 +1520,16 @@ WPADiWriteGameData(WPADChan channel,
                    WPADCallback callback);
 
 /**
- * Read custom game data from the controller's EEPROM
+ * Reads custom game data from the controller's EEPROM.
+ *
  * \param offset start address within custom data region
  * \return `WPAD_ERROR_NONE`, if the read request was sent
  * \return `WPAD_ERROR_NOT_READY`, if the controller's game data is in the process of being read or written
  * \return `WPAD_ERROR_PERMISSION`, if the WPAD's GameCode does not match the global Game Code
  * \return `WPAD_ERROR_BROKEN`, if game data previously failed to write
  * \sa
- * - WPADiWriteGameData
- * - WPADiGetGameCode
+ * - `WPADiWriteGameData()`
+ * - `WPADiGetGameCode()`
  */
 WPADError
 WPADiReadGameData(WPADChan channel,
@@ -1450,7 +1539,7 @@ WPADiReadGameData(WPADChan channel,
                   WPADCallback callback);
 
 /**
- * Get MotionPlus mode
+ * Gets MotionPlus mode
  *
  * identical to \link KPADGetMplsStatus \endlink
  */
@@ -1460,7 +1549,7 @@ WPADiGetMplsStatus(void);
 /**
  * Returns the battery level.
  *
- * \return A charge level, from 0 to 4.
+ * \return A charge level, from `0` to `4`.
  */
 uint8_t
 WPADGetBatteryLevel(WPADChan channel);
@@ -1472,6 +1561,350 @@ WPADError
 WPADControlBLC(WPADChan channel,
                WPADBalanceBoardCmd command,
                WPADCallback callback);
+
+BOOL
+WPADAttachDummyExtension(WPADChan chan,
+                         WPADExtensionType type);
+
+BOOL
+WPADCancelSyncDevice(void);
+
+void
+WPADClampAcc(WPADChan chan,
+             WPADStatus *status,
+             BOOL spherical);
+
+void
+WPADClampStick(WPADChan chan,
+               WPADStatus *status,
+               WPADClampType type);
+
+void
+WPADClampTrigger(WPADChan chan,
+                 WPADStatusClassic *status,
+                 BOOL type);
+
+WPADError
+WPADControlCustomDev(WPADExtensionType ext,
+                     BOOL unknown);
+
+
+WPADError
+WPADControlExtGimmick(WPADChan chan,
+                      uint32_t command,
+                      WPADCallback callback);
+
+BOOL
+WPADDeleteControllerOrder(void);
+
+BOOL
+WPADDetachDummyExtension(WPADChan chan);
+
+void
+WPADDisableBluetooth(void);
+
+void
+WPADEnableSensorBar(BOOL enable)
+   WUT_DEPRECATED("Use WPADSetSensorBar() instead.");
+
+BOOL
+WPADGetAcceptConnection(void);
+
+void
+WPADGetAccGravityUnit(WPADChan chan,
+                      WPADExtensionType ext,
+                      WPADVec3D *grav);
+
+/**
+ * Gets the time since last input activity on a specific wiimote.
+ *
+ * \note This timer is updated even when auto sleep is disabled.
+ *
+ * \param chan The target wiimote.
+ *
+ * \return The current auto sleep timer, in milliseconds.
+ *
+ * \sa
+ * - `WPADResetAutoSleepTimeCount()`
+ * - `WPADSetAutoSleepTime()`
+ */
+uint32_t
+WPADGetAutoSleepTimeCount(WPADChan chan);
+
+WPADError
+WPADGetBLReg(WPADChan chan,
+             void *dst,
+             uint32_t address,
+             WPADCallback callback);
+
+void
+WPADGetCalibratedDPDObject(WPADIRDot *dst,
+                           const WPADIRDot *src);
+
+BOOL
+WPADGetCalibrationStatus(WPADChan chan);
+
+void
+WPADGetCLTriggerThreshold(WPADChan chan,
+                          uint8_t *left,
+                          uint8_t *right);
+
+void
+WPADGetDpdCornerPoints(WPADChan chan,
+                       void *dst);
+
+uint8_t
+WPADGetDpdSensitivity(void);
+
+//! Thisis a stub, it does nothing.
+WPADError
+WPADGetMPCalibration(void);
+
+uint8_t
+WPADGetRadioSensitivity(WPADChan chan);
+
+uint8_t
+WPADGetRegisteredDevNum(void);
+
+WPADSensorBarPos
+WPADGetSensorBarPosition(void);
+
+WPADError
+WPADGetSyncType(WPADChan chan,
+                uint8_t *type);
+
+WPADError
+WPADGetVSMCalibration(WPADChan chan,
+                      void *dst,
+                      uint32_t addr,
+                      uint32_t len,
+                      WPADCallback callback);
+
+WPADError
+WPADGetVSMInputSource(WPADChan chan,
+                      uint8_t *value,
+                      WPADCallback callback);
+
+WPADError
+WPADGetVSMLEDDrivePWMDuty(WPADChan chan,
+                          uint8_t *result,
+                          WPADCallback callback);
+
+WPADError
+WPADGetVSMPOT1State(WPADChan chan,
+                    uint8_t *state,
+                    WPADCallback callback);
+
+WPADError
+WPADGetVSMPOT2State(WPADChan chan,
+                    uint8_t *state,
+                    WPADCallback callback);
+
+uint32_t
+WPADGetWorkMemorySize(void);
+
+void
+WPADiClearMemBlock(WPADChan chan,
+                   void *wiimoteContext);
+
+BOOL
+WPADiControllerInfoInNand(void);
+
+void
+WPADiControlMpls(WPADChan chan,
+                 WPADMplsMode mode,
+                 WPADCallback callback);
+
+WPADError
+WPADiControlMplsProbe(WPADChan chan,
+                      uint8_t unknown);
+
+void
+WPADiCopyOut(WPADChan chan);
+
+void
+WPADiCreateKey(WPADChan chan);
+
+void
+WPADiCreateKeyFor3rd(WPADChan chan);
+
+void
+WPADiDecode(WPADChan chan,
+            void *buf,
+            uint16_t len,
+            uint16_t offset);
+
+void
+WPADiExcludeButton(WPADChan chan);
+
+void
+WPADiGetMplsCalibration(WPADChan chan,
+                        WPADiMplsCalibration *high,
+                        WPADiMplsCalibration *low);
+
+BOOL
+WPADiIsDummyExtension(WPADChan chan);
+
+
+BOOL
+WPADIsBusyForSync(void);
+
+BOOL
+WPADIsDpdEnabled(WPADChan chan);
+
+BOOL
+WPADIsEnabledCustomDev(WPADExtensionType ext);
+
+BOOL
+WPADIsEnabledWBC(void);
+
+void
+WPADiSetMplsCalibration(WPADChan chan,
+                        WPADStatusMotionPlus *status);
+
+BOOL
+WPADIsRegisteredBLC(void);
+
+BOOL
+WPADIsUsedCallbackByKPAD(void);
+
+BOOL
+WPADPurgeBtDb(void);
+
+void
+WPADRecalibrate(WPADChan chan);
+
+void
+WPADRegisterAllocator(const void *allocFunc,
+                      const void *freeFunc)
+   WUT_DEPRECATED("This function is not used anymore.");
+
+void
+WPADRegisterBLCWorkarea(void);
+
+/**
+ * Resets the auto sleep timer back to zero.
+ *
+ * \param chan The target wiimote.
+ *
+ * \sa
+ * - `WPADGetAutoSleepTimeCount()`
+ * - `WPADSetAutoSleepTime()`
+ */
+void
+WPADResetAutoSleepTimeCount(WPADChan chan);
+
+void
+WPADRestoreDpdData(uint32_t unknown1,
+                   uint32_t unknown2,
+                   BOOL irEnabled,
+                   WPADChan chan);
+
+void
+WPADRestoreReportType(WPADChan chan,
+                      WPADDataFormat format,
+                      BOOL powerSave);
+
+WPADChan
+WPADRetrieveChannel(uint32_t unknown);
+
+BOOL
+WPADSaveConfig(void);
+
+BOOL
+WPADSetAcceptConnection(BOOL accept);
+
+
+WPADError
+WPADSetBLCalibration(void);
+
+WPADError
+WPADSetBLReg(WPADChan chan,
+             uint8_t value,
+             uint32_t addr,
+             WPADCallback callback);
+
+void
+WPADSetCallbackByKPAD(BOOL value);
+
+WPADClearDeviceCallback
+WPADSetClearDeviceCallback(WPADClearDeviceCallback callback);
+
+void
+WPADSetDisableChannelImm(uint8_t afhChannel);
+
+void
+WPADSetDpdSensitivity(uint8_t sensitivity);
+
+void
+WPADSetInactivePeriod(uint32_t period);
+
+WPADError
+WPADSetMPCalibration(void);
+
+void
+WPADSetRawDataBuffer(void);
+
+void
+WPADSetSensorBar(BOOL enable);
+
+void
+WPADSetSensorBarPosition(WPADSensorBarPos pos);
+
+void
+WPADSetSensorBarPower(BOOL enable);
+
+WPADSyncDeviceCallback
+WPADSetSyncDeviceCallback(WPADSyncDeviceCallback callback);
+
+WPADError
+WPADSetVSMCalibration(void);
+
+void
+WPADSetVSMInputSource(WPADChan chan,
+                      uint8_t value,
+                      WPADCallback callback);
+
+void
+WPADSetVSMLEDDrivePWMDuty(WPADChan chan,
+                          uint8_t unknown,
+                          WPADCallback callback);
+
+void
+WPADSetVSMPOT1State(WPADChan chan,
+                    uint8_t state,
+                    WPADCallback callback);
+
+void
+WPADSetVSMPOT2State(WPADChan chan,
+                    uint8_t state,
+                    WPADCallback callback);
+
+void
+WPADStartClearDevice(void);
+
+BOOL
+WPADStartFastSyncDevice(void);
+
+//! Called by `WPADInit()`.
+void
+wpad_im_setup(void);
+
+void
+wpad_im_state_active(WPADChan chan);
+
+void
+wpad_im_state_home(uint32_t type,
+                   uint32_t unknown);
+
+void
+wpad_im_state_inactive(WPADChan chan);
+
+void
+wpad_im_state_power(void);
+
+void
+wpad_im_teardown(void);
 
 #ifdef __cplusplus
 }
