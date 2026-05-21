@@ -96,6 +96,8 @@ typedef enum VPADButtons
    VPAD_BUTTON_REPEAT           = 0x80000000,
 } VPADButtons;
 
+WUT_ENUM_BITMASK_TYPE(VPADButtons)
+
 //! Touch pad validity.
 typedef enum VPADTouchPadValidity
 {
@@ -108,6 +110,8 @@ typedef enum VPADTouchPadValidity
    //! Y position is inaccurate.
    VPAD_INVALID_Y = 0x2,
 } VPADTouchPadValidity;
+
+WUT_ENUM_BITMASK_TYPE(VPADTouchPadValidity)
 
 //! Touch pad resolution.
 typedef enum VPADTouchPadResolution
@@ -149,10 +153,10 @@ typedef enum VPADLcdMode
 //! Gyro zero drift mode.
 typedef enum VPADGyroZeroDriftMode
 {
-   VPAD_GYRO_ZERODRIFT_LOOSE = 0,
-   VPAD_GYRO_ZERODRIFT_STANDARD,
-   VPAD_GYRO_ZERODRIFT_TIGHT,
-   VPAD_GYRO_ZERODRIFT_NONE
+   VPAD_GYRO_ZERODRIFT_LOOSE    = 0,
+   VPAD_GYRO_ZERODRIFT_STANDARD = 1,
+   VPAD_GYRO_ZERODRIFT_TIGHT    = 2,
+   VPAD_GYRO_ZERODRIFT_NONE     = 3,
 } VPADGyroZeroDriftMode;
 
 //! Mode used for various input filtering algorithms.
@@ -868,8 +872,8 @@ VPADCalcTPCalibrationParam(VPADTouchCalibrationParam *param,
                            uint16_t screenY1,
                            uint16_t touchX2,
                            uint16_t touchY2,
-                           uint16_t x2,
-                           uint16_t y2);
+                           uint16_t screenX2,
+                           uint16_t screenY2);
 
 /**
  * Gets the accelerometer play mode.
@@ -1040,15 +1044,14 @@ VPADStartAccCalibration(VPADChan chan,
 
 int32_t
 VPADWriteTPCalibrationValueToEEPROM(VPADChan chan,
-                                    uint32_t unknown1,
-                                    uint32_t unknown2,
-                                    uint32_t unknown3,
-                                    uint32_t unknown4,
-                                    uint32_t unknown5,
-                                    uint32_t unknown6,
-                                    uint32_t unknown7,
-                                    uint32_t unknown8,
-                                    uint32_t unknown9);
+                                    uint16_t unknown1,
+                                    uint16_t unknown2,
+                                    uint16_t unknown3,
+                                    uint16_t unknown4,
+                                    uint16_t unknown5,
+                                    uint16_t unknown6,
+                                    uint16_t unknown7,
+                                    uint16_t unknown8);
 
 #ifdef __cplusplus
 }
