@@ -332,12 +332,14 @@ IM_SetSystemPolicy(IOSHandle handle,
                    void *asyncCallbackContext);
 
 IOSError
-IM_SetTimerElapsedSeconds(IOSHandle handle,
+IM_SetTimerElpasedSeconds(IOSHandle handle,
                           IMRequest *request,
                           IMTimer timer,
                           uint32_t value,
                           IOSAsyncCallbackFn *asyncCallback,
-                          void *asyncCallbackContext) __asm__("IM_SetTimerElpasedSeconds");
+                          void *asyncCallbackContext);
+
+#define IM_SetTimerElapsedSeconds IM_SetTimerElpasedSeconds
 
 #ifdef __cplusplus
 }
